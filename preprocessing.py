@@ -34,7 +34,10 @@ class TokenizerV1:
             Vocabulary
         """
         tokens = self._tokenize(corpus)
+        tokens = list(sorted(set(tokens)))
+        tokens.extend(['<unk>', '<|endoftext|>'])
         vocab = {token:i for i, token in enumerate(tokens)}
+        print(list(vocab.items())[:5])
         return vocab
 
     def _validate_vocabulary(self, vocab: Dict[str, int]) -> None:
@@ -65,7 +68,7 @@ class TokenizerV1:
             List of IDs
         """
         try:
-            return [self.vocab[token] for token in tokens]
+            return [self.vocab.get(token, self.vocab['<unk>']) for token in tokens]
         except KeyError as e:
             raise KeyError(f"Token not found in vocabulary: {str(e)}")
     
@@ -93,8 +96,27 @@ class TokenizerV1:
         """
         self._validate_vocabulary(self.vocab)
         try:
-            text = ' '.join(self.vocab[id] for id in ids)
-            text = re.sub(r'\s+([,.?!"()\'])', r'\1', text)
+            text = ' '.join(self.vocab.get(id, '<unk>') for id in ids)
+            text = re.sub(r'\s+([,.:;?!"()\'])', r'\1', text)
         except KeyError as e:
             raise KeyError(f"ID not found in vocabulary: {str(e)}")
+        return text
+    
+
+class SimpleTokenizerV2:
+    def __init__(self, vocab):
+        self.str_to_int = vocab
+        self.int_to_str = { i:s for s,i in vocab.items()}
+    def encode(self, text):
+        preprocessed = re.split(r'([,.:;?_!"()\']|--|\s)', text)
+        preprocessed = [
+        item.strip() for item in preprocessed if item.strip()
+        ]
+        preprocessed = [item if item in self.str_to_int
+        else "<|unk|>" for item in preprocessed]
+        ids = [self.str_to_int[s] for s in preprocessed]
+        return ids
+    def decode(self, ids):
+        text = " ".join([self.int_to_str[i] for i in ids])
+        text = re.sub(r'\s+([,.:;?!"()\'])', r'\1', text)
         return text

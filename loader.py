@@ -22,4 +22,4 @@ def load_text(filename: str) -> str:
     if not data_path.exists():
         raise FileNotFoundError(f"Data file not found: {data_path}")
         
-    return data_path.read_text()
+    return data_path.read_text(encoding='utf-8')
